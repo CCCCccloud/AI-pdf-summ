@@ -1,6 +1,6 @@
 import formidable from 'formidable';
 import fs from 'fs';
-import { PDFParse } from 'pdf-parse';
+import pdfParse from 'pdf-parse';
 
 export const config = {
   api: { bodyParser: false },
@@ -26,9 +26,7 @@ export default async function handler(req, res) {
 
   try {
     const buffer = fs.readFileSync(file.filepath);
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-    await parser.destroy();
+    const result = await pdfParse(buffer);
     return res.status(200).json({ text: result.text });
   } catch (err) {
     console.error('PDF extraction error:', err);
