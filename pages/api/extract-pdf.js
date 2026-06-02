@@ -25,8 +25,10 @@ export default async function handler(req, res) {
 
   try {
     const buffer = fs.readFileSync(file.filepath);
-    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const result = await pdfParse(buffer);
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
     return res.status(200).json({ text: result.text });
   } catch (err) {
     console.error('PDF extraction error:', err);
