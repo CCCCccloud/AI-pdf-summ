@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 export default function Home() {
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState('');
+  const [status, setStatus] = useState(''); // 'extracting' | 'summarizing' | ''
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
 
@@ -16,27 +16,44 @@ export default function Home() {
     }
 
     setFileName(file.name);
-    setLoading(true);
-    setText('');
+    setSummary('');
     setError('');
 
-    const formData = new FormData();
-    formData.append('pdf', file);
-
+    // Step 1: extract text from PDF
+    setStatus('extracting');
+    let text;
     try {
-      const res = await fetch('/api/extract-pdf', {
-        method: 'POST',
-        body: formData,
-      });
+      const formData = new FormData();
+      formData.append('pdf', file);
+      const res = await fetch('/api/extract-pdf', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
-      setText(data.text);
+      text = data.text;
+    } catch (err) {
+      setError(err.message);
+      setStatus('');
+      return;
+    }
+
+    // Step 2: summarize with DeepSeek
+    setStatus('summarizing');
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Summarization failed');
+      setSummary(data.summary);
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setStatus('');
     }
   }
+
+  const statusLabel = status === 'extracting' ? 'Extracting text…' : status === 'summarizing' ? 'Summarizing…' : '';
 
   return (
     <>
@@ -80,19 +97,17 @@ export default function Home() {
           padding: 24px;
         }
         .output-box h2 { font-size: 1rem; font-weight: 600; color: #374151; margin-bottom: 12px; }
-        .output-box pre {
+        .output-box p {
           white-space: pre-wrap;
           word-break: break-word;
-          font-size: 0.875rem;
+          font-size: 0.925rem;
           color: #1f2937;
-          line-height: 1.6;
-          max-height: 60vh;
-          overflow-y: auto;
+          line-height: 1.7;
         }
       `}</style>
 
       <div className="container">
-        <h1>PDF Text Extractor</h1>
+        <h1>PDF Summarizer</h1>
 
         <div className="upload-box">
           <label htmlFor="pdf-input">
@@ -104,18 +119,19 @@ export default function Home() {
               type="file"
               accept=".pdf,application/pdf"
               onChange={handleFileChange}
+              disabled={!!status}
             />
           </label>
           {fileName && <p className="file-name">Selected: {fileName}</p>}
         </div>
 
-        {loading && <p className="status">Extracting text...</p>}
+        {statusLabel && <p className="status">{statusLabel}</p>}
         {error && <p className="error">Error: {error}</p>}
 
-        {text && (
+        {summary && (
           <div className="output-box">
-            <h2>Extracted Text</h2>
-            <pre>{text}</pre>
+            <h2>Summary</h2>
+            <p>{summary}</p>
           </div>
         )}
       </div>
