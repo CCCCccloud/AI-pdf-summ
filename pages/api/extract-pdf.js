@@ -1,3 +1,4 @@
+import './_setup';
 import formidable from 'formidable';
 import fs from 'fs';
 import os from 'os';
