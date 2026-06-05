@@ -5,6 +5,13 @@ export default function Home() {
   const [status, setStatus] = useState(''); // 'extracting' | 'summarizing' | ''
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(summary);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function handleFileChange(e) {
     const file = e.target.files[0];
@@ -96,7 +103,14 @@ export default function Home() {
           border-radius: 12px;
           padding: 24px;
         }
-        .output-box h2 { font-size: 1rem; font-weight: 600; color: #374151; margin-bottom: 12px; }
+        .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .output-header h2 { font-size: 1rem; font-weight: 600; color: #374151; }
+        .copy-btn {
+          font-size: 0.8rem; padding: 4px 12px; border-radius: 6px; border: 1px solid #d1d5db;
+          background: #f9fafb; color: #374151; cursor: pointer; transition: background 0.15s;
+        }
+        .copy-btn:hover { background: #f3f4f6; }
+        .copy-btn.copied { background: #dcfce7; border-color: #86efac; color: #166534; }
         .output-box p {
           white-space: pre-wrap;
           word-break: break-word;
@@ -130,7 +144,12 @@ export default function Home() {
 
         {summary && (
           <div className="output-box">
-            <h2>Summary</h2>
+            <div className="output-header">
+              <h2>Summary</h2>
+              <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
             <p>{summary}</p>
           </div>
         )}
