@@ -1,11 +1,22 @@
 import formidable from 'formidable';
 import fs from 'fs';
 import os from 'os';
-import PDFParse from 'pdf-parse';
+import path from 'path';
+import { pathToFileURL } from 'url';
+import { PDFParse } from 'pdf-parse';
 
 export const config = {
   api: { bodyParser: false },
 };
+
+// pdf-parse ships its own compiled pdfjs worker; must be set explicitly.
+// path.resolve uses process.cwd() which is /var/task on Vercel, where
+// node_modules for direct dependencies are guaranteed to exist.
+PDFParse.setWorker(
+  pathToFileURL(
+    path.resolve('node_modules/pdf-parse/dist/worker/pdf.worker.mjs')
+  ).href
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -27,8 +38,10 @@ export default async function handler(req, res) {
 
   try {
     const buffer = fs.readFileSync(file.filepath);
-    const data = await PDFParse(buffer);
-    return res.status(200).json({ text: data.text.trim() });
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
+    return res.status(200).json({ text: result.text.trim() });
   } catch (err) {
     console.error('PDF extraction error:', err);
     return res.status(500).json({ error: 'Failed to extract text from PDF' });
