@@ -6,6 +6,7 @@ export default function Home() {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [language, setLanguage] = useState('zh'); // 'zh' | 'en'
 
   async function handleCopy() {
     await navigator.clipboard.writeText(summary);
@@ -48,7 +49,7 @@ export default function Home() {
       const res = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, language }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Summarization failed');
@@ -111,6 +112,16 @@ export default function Home() {
         }
         .copy-btn:hover { background: #f3f4f6; }
         .copy-btn.copied { background: #dcfce7; border-color: #86efac; color: #166534; }
+
+        .lang-toggle { display: flex; gap: 6px; margin-bottom: 20px; }
+        .lang-btn {
+          padding: 6px 16px; border-radius: 20px; border: 1px solid #d1d5db;
+          background: #f9fafb; color: #6b7280; cursor: pointer; font-size: 0.875rem;
+          transition: all 0.15s;
+        }
+        .lang-btn:hover { background: #eef2ff; border-color: #6366f1; color: #4f46e5; }
+        .lang-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; font-weight: 600; }
+
         .output-box p {
           white-space: pre-wrap;
           word-break: break-word;
@@ -122,6 +133,23 @@ export default function Home() {
 
       <div className="container">
         <h1>PDF Summarizer</h1>
+
+        <div className="lang-toggle">
+          <button
+            className={`lang-btn${language === 'zh' ? ' active' : ''}`}
+            onClick={() => setLanguage('zh')}
+            disabled={!!status}
+          >
+            中文
+          </button>
+          <button
+            className={`lang-btn${language === 'en' ? ' active' : ''}`}
+            onClick={() => setLanguage('en')}
+            disabled={!!status}
+          >
+            English
+          </button>
+        </div>
 
         <div className="upload-box">
           <label htmlFor="pdf-input">

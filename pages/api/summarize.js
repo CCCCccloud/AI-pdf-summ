@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { text } = req.body;
+  const { text, language = 'zh' } = req.body;
   if (!text) {
     return res.status(400).json({ error: 'No text provided' });
   }
@@ -25,12 +25,16 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant. Summarize the provided document text concisely, capturing the key points.',
+            content: language === 'zh'
+              ? '你是一个有用的助手。请用中文简洁地总结所提供的文档，提炼出核心要点。'
+              : 'You are a helpful assistant. Summarize the provided document text concisely in English, capturing the key points.',
           },
           {
             role: 'user',
             // Limit to 50 000 chars to stay well within context limits
-            content: `Please summarize the following document:\n\n${text.slice(0, 50000)}`,
+            content: language === 'zh'
+              ? `请用中文总结以下文档：\n\n${text.slice(0, 50000)}`
+              : `Please summarize the following document:\n\n${text.slice(0, 50000)}`,
           },
         ],
         max_tokens: 1024,
