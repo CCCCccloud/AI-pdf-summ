@@ -8,6 +8,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'No text provided' });
   }
 
+  // deepseek-chat has a 128K token context window.
+  // At ~2 chars/token (conservative for Chinese), ~126K usable tokens after prompt/response
+  // overhead ≈ 252K chars. We cap at 200K for a clean ~20% safety margin.
+  const MAX_CHARS = 200_000;
+  if (text.length > MAX_CHARS) {
+    return res.status(413).json({
+      error: `This PDF is too long to summarize — the extracted text is ${text.length.toLocaleString()} characters, which exceeds the ${MAX_CHARS.toLocaleString()}-character limit. Try a shorter document or a specific chapter/section.`,
+    });
+  }
+
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'DEEPSEEK_API_KEY is not configured' });
@@ -31,10 +41,9 @@ export default async function handler(req, res) {
           },
           {
             role: 'user',
-            // Limit to 50 000 chars to stay well within context limits
             content: language === 'zh'
-              ? `请用中文总结以下文档：\n\n${text.slice(0, 50000)}`
-              : `Please summarize the following document:\n\n${text.slice(0, 50000)}`,
+              ? `请用中文总结以下文档：\n\n${text}`
+              : `Please summarize the following document:\n\n${text}`,
           },
         ],
         max_tokens: 1024,
